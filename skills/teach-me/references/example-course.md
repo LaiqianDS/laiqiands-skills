@@ -1,8 +1,7 @@
-# Example: a course after one session
+# Example: one course after its first session
 
-One worked course, for a learner who said "I want to understand async JavaScript properly".
-Copy the shape, never the content.
-What makes it a course and not a syllabus is that every state on the map is backed by something the learner said out loud.
+One course for a learner who said "I want to understand async JavaScript properly".
+Copy the shape and the depth, never the content.
 
 ---
 
@@ -16,9 +15,7 @@ What makes it a course and not a syllabus is that every state on the map is back
 **Out of scope:** workers, streams.
 ```
 
-Note what the goal is not.
-"Understand async properly" was the opening answer, and it was pushed until it named a thing the learner will be able to do.
-The out of scope line is doing real work: it is what keeps workers and streams from turning into nodes nobody needs.
+"Understand async properly" was the opening answer, pushed until it named something the learner will be able to do.
 
 ---
 
@@ -30,7 +27,7 @@ The out of scope line is doing real work: it is what keeps workers and streams f
 ```mermaid
 graph TD
   A[Event loop] --> B[Promises]
-  A --> C[Task vs microtask queue]
+  A --> C[Node.js loop phases]
   B --> D[async/await]
   D --> E[Errors in async functions]
   D --> F[Parallel vs sequential awaits]
@@ -50,98 +47,194 @@ graph TD
 - [MDN, Using promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises): reference for chaining and error propagation.
 ````
 
-This map shows the thing a ladder cannot.
-The learner is **solid on promises but weak on the event loop**, which sits above them in the graph.
-A triage that walked a straight line from easy to hard would have stopped at the first miss and never found out that promises were already held.
-
-The frontier here is `Event loop`, not `async/await`.
-Both are weak, but the event loop has no unheld parent, so it is the one that can be taught today.
-Nothing in the file states this, because it reads straight off the graph.
-
-`C`, `E` and `F` carry no class.
-That is what "not seen yet" looks like, and it is why a fresh map is nearly all bare nodes.
+The learner is solid on `Promises` but weak on `Event loop`, which sits above it.
+A triage that walked a straight line from easy to hard would have stopped at the first miss and never found that promises were held.
+Both `Event loop` and `async/await` are weak, and the frontier is `Event loop`, because every other node depends on it.
 
 ---
 
 ## `lessons/0001-event-loop.md`
 
-```markdown
+````markdown
 # Event loop
 
-You have a `setTimeout(fn, 0)` and a `Promise.resolve().then(fn)` queued in that order.
-The `.then()` runs first. Every time, on every engine.
+Sometimes a request to the payments backend waits for seconds, and nothing in the logs says why.
+To find the cause, you need to know the order in which JavaScript runs the code that is waiting.
+That order is the event loop.
+It has no parent on your map, but you already hold promises, so the examples use them.
+After this lesson you can read async code and say which callback runs first, and why.
 
-That is because there are two queues, not one, and they are not read at the same rate.
-The microtask queue (promises) is drained **completely** after the current script finishes.
-Only then does the loop take **one** task off the macrotask queue (timers, I/O, events) and run it.
-Then it drains the microtasks again.
+## Example
 
-So a promise never waits behind a timer, and a chain of a thousand `.then()` calls will
-starve a `setTimeout(0)` until the whole chain is done. That starvation is the bug
-you have been seeing in the payments backend.
+Run this file with `node`:
 
-## Visual
-[The two queues draining, one tick at a time](0001-event-loop.html)
+```js
+console.log("script start");
 
-## Source
-[Jake Archibald, "In The Loop"](https://www.youtube.com/watch?v=cCOL7MC4Pl0): the queue ordering, shown live at 8:30.
+setTimeout(() => console.log("timeout"), 0);
 
-## Check
-**Given a `setTimeout(0)`, then a `.then()`, then a second `setTimeout(0)`, all queued in that order from the same script: what is the output order, and why?**
-Learner answered: then, timeout, timeout. "Microtasks all drain first, then one timer at a time, and there are no new microtasks between the two timers."
-Correct, and the reason was right, which is what mattered. The prediction was on a case not covered in the explanation.
+Promise.resolve()
+  .then(() => console.log("then 1"))
+  .then(() => console.log("then 2"));
 
-## Result
-Event loop: solid. Predicted an unseen case and gave the mechanism, not the answer.
+console.log("script end");
 ```
 
-The check is probe 2, prediction, and it was built from a case the explanation did not walk through.
-Had it re-asked the exact example from the text, it would have measured reading, not understanding.
+The output, every time, in Node and in every modern browser:
 
----
+```text
+script start
+script end
+then 1
+then 2
+timeout
+```
 
-## Why this node earned a page
+The timer was set first, with a delay of 0, and it still runs last.
+Step by step:
 
-`lessons/0001-event-loop.html` exists because the node is **something that moves**, and the prose above has to
-say in three paragraphs what one tick of the loop does in an instant.
-Six steps, forward and back: script running, microtasks draining to empty, one task taken, microtasks draining again.
-The learner presses Forward and watches the timer sit there while the promises go.
+1. `console.log("script start")` runs.
+   Output: `script start`.
+2. `setTimeout` does not run its callback.
+   It asks for the callback to go into the task queue once the delay has passed.
+3. `Promise.resolve()` gives a promise that is already resolved, so the first `.then()` callback goes straight into the microtask queue.
+   The second `.then()` waits on the promise that the first `.then()` returned, so it is not in any queue yet.
+4. `console.log("script end")` runs.
+   Output: `script end`.
+5. The script is done, and nothing else is running.
+   Before the loop takes anything from the task queue, it empties the microtask queue.
+   `then 1` runs.
+   When it returns, the promise from the first `.then()` resolves, and that puts `then 2` in the microtask queue.
+   The queue is not empty yet, so `then 2` runs too.
+6. The microtask queue is now empty.
+   Only now does the loop take the next task, the timer callback.
+   Output: `timeout`.
 
-Two things the page is not.
-It does not repeat the explanation with better type, and it does not ask the question.
-The check stayed in the Markdown, so what moved `Event loop` to `solid` is still a sentence the learner produced.
+## The idea
 
-`Promises` would not have earned a page.
-Chaining is a rule about return values, and a rule is exactly the thing prose is already good at.
+JavaScript runs one piece of code at a time, on one thread.
+Code that has to run later waits in one of two queues.
+The loop always empties the microtask queue completely before it takes one task from the task queue.
+A promise callback is a microtask, and a timer callback is a task.
+So a promise callback that is ready never waits behind a timer.
 
----
+## How it works
 
-## What the same map looks like after this session
+Four terms carry the whole mechanism.
 
-Two things move and nothing else does:
+- **Call stack**: the code that is running now.
+  The loop waits while there is code on the stack.
+- **Task**: one unit of work in the task queue.
+  Running the script is the first task.
+  Timer callbacks from `setTimeout` and `setInterval` are tasks, and so are I/O callbacks, such as the one that handles an incoming request.
+- **Microtask**: a callback that runs as soon as the stack is empty, before the next task.
+  Promise callbacks (`.then`, `.catch`, `.finally`), the code after an `await`, and `queueMicrotask` callbacks are microtasks.
+- **Microtask checkpoint**: the moment the loop empties the microtask queue.
+  It starts each time the stack becomes empty.
+  It ends only when the queue is empty, and that includes the microtasks added during the checkpoint.
 
-- **The graph**: `A` moves from `weak` to `solid`. `class A,D weak` becomes `class D weak`, and `class B solid` becomes `class A,B solid`.
-- **Evidence**: the `Event loop` line is replaced by what the learner produced today. The old line goes, because it recorded a state that is no longer true.
+In the example, step 5 is a microtask checkpoint.
+`then 2` was added during it, and it still ran before the timer, because the checkpoint ended only when the queue was empty.
 
-`COURSE.md` is not touched.
-It only moves when the goal moves, and debugging the payments backend is still the goal.
+The same rule explains a hang.
+If each microtask adds another microtask, the checkpoint never ends:
 
-The next session opens on `Task vs microtask queue` or on `async/await`, both now unblocked.
-`async/await` wins, because it already carries a recorded misconception and a wrong belief left standing spreads to `E` and `F` underneath it.
+```js
+function spin() {
+  Promise.resolve().then(spin); // every run adds one more microtask
+}
+spin();
+setTimeout(() => console.log("never printed"), 0);
+```
 
----
+This program prints nothing, never exits, and keeps the CPU busy.
+The loop never gets back to the task queue, so no timer fires and no request is handled.
+From the outside, the backend looks hung: requests wait, and nothing is logged.
 
-## The same course for a Spanish-speaking learner
+Node.js keeps this rule and adds more structure: phases for different kinds of task, and a `process.nextTick` queue that runs even before promise callbacks.
+That is the next node on your map, `Node.js loop phases`.
 
-The shape does not move.
-The directory is still `concurrency-in-javascript/`, the files are still `COURSE.md`, `MAP.md` and `lessons/`, and the headings are still `## Map`, `## Evidence` and `## Sources`.
+## Diagram
 
-Only what the learner reads changes language:
+```mermaid
+flowchart TD
+  T[Take the next task and run it] --> Q{Is the microtask queue empty?}
+  Q -- No --> M[Run the oldest microtask]
+  M --> Q
+  Q -- Yes --> T
+```
 
-````markdown
-## Evidence
-- **Event loop**: no supo decir por qué un `.then()` corre antes que un `setTimeout(0)` encolado antes. Supuso que "los timers son más rápidos".
+Start at the top: the script is the first task.
+The cycle between the question and the box below it is the microtask checkpoint, and the only way back to the top is the Yes arrow.
+
+## Common mistakes
+
+- **"Timers are faster"**: that was your answer before this lesson.
+  A timer's delay is the least time before its callback may run, not the time it runs.
+  When the delay has passed, the callback is one more task in the queue, and every waiting microtask still goes first.
+- **"`setTimeout(fn, 0)` runs `fn` right away"**: it puts `fn` in the task queue.
+  The current script and the whole microtask queue always finish before it.
+- **"Promise callbacks run in the background"**: nothing runs in the background.
+  Every callback runs on the same thread, and while one runs, no request is handled.
+  A long `.then` chain delays every task behind it, and a chain that never ends stops them all.
+
+## Summary
+
+- JavaScript runs one callback at a time, on one thread.
+- After every task, the loop empties the microtask queue before it takes the next task.
+- Promise callbacks and the code after `await` are microtasks, and timer and I/O callbacks are tasks.
+- A timer's delay is a minimum wait, not a place at the front of the queue.
+- A microtask that keeps adding microtasks stops every timer and every request, which looks like a hang.
+
+## Visual
+
+[The two queues draining, one callback at a time](0001-event-loop.html)
+
+## Sources
+
+- [Jake Archibald, "Tasks, microtasks, queues and schedules"](https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/): the same kind of example, stepped through with the queues drawn at each step.
+  Read the opening section and "Why this happens".
+- [MDN, "Using microtasks in JavaScript with queueMicrotask()"](https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide): the rule that the loop keeps running microtasks until none are left, even while new ones are added.
+  Section "Tasks vs. microtasks".
+- [Node.js, "The Node.js Event Loop"](https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick): the loop in Node, where the payments backend runs.
+  Read "Phases Overview" for now.
+  The rest is the next node.
+
+## Check
+
+**Two timers, and a promise inside the first one. What is the output, and why?**
+
+```js
+setTimeout(() => {
+  console.log("timeout 1");
+  Promise.resolve().then(() => console.log("then inside timeout 1"));
+}, 0);
+
+setTimeout(() => console.log("timeout 2"), 0);
+```
+
+Learner answered: `timeout 1`, `then inside timeout 1`, `timeout 2`.
+"The first timer is a task. When it ends the stack is empty, so the microtask runs before the loop takes the second timer."
+Correct, and the reason was the mechanism, not a memorised order.
+
+## Result
+
+Event loop: solid. Predicted a case the lesson never showed, and gave the mechanism behind it.
 ````
 
-The node labels stay `Event loop` and `Promises`.
-Those are the words this learner will meet in every article, every error message and every colleague's question, so translating them would teach a vocabulary that exists nowhere outside the course.
+Why it reads this way:
+
+- `## Example` comes before `## The idea`, because `COURSE.md` asks for the example first.
+- `## Common mistakes` opens with "timers are faster", the learner's own answer recorded in `MAP.md`.
+- All three programs were run, and the output shown is the output they gave.
+- The check predicts a case the lesson never showed, a microtask inside a task, so it measures understanding and not reading.
+- The page exists because the loop moves: it steps the example's callbacks through the two queues. `Promises` would get no page, because a rule about return values is what prose does well.
+
+---
+
+## After the session
+
+In the graph, `class A,D weak` becomes `class D weak`, and `class B solid` becomes `class A,B solid`.
+The `Event loop` evidence line is replaced by what the learner produced today.
+`COURSE.md` does not change.
+The next session teaches `async/await` before `Node.js loop phases`, although both are unblocked, because it carries a recorded wrong belief that would spread to `E` and `F`.
