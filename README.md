@@ -1,31 +1,47 @@
-# Claude Skills
+# laiqiands-skills
 
-A collection of custom skills for [Claude](https://claude.ai) by [Laiqian Ji](https://github.com/LaiqianDS).
+[![Validate skills](https://github.com/LaiqianDS/laiqiands-skills/actions/workflows/validate.yml/badge.svg)](https://github.com/LaiqianDS/laiqiands-skills/actions/workflows/validate.yml)
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FLaiqianDS%2Flaiqiands-skills%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version&color=blue)](.claude-plugin/plugin.json)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-Skills are modular instruction packages that extend Claude's capabilities on specialized tasks.
-Each skill teaches Claude a repeatable workflow, whether that's writing high-conversion cold emails, structuring technical documents, or automating a specific analysis.
+Skills for [Claude](https://claude.ai) that make it interview, diagnose and write a document, instead of answering with a generic list.
+Each skill teaches Claude one repeatable workflow.
 
 ## Skills
 
-| Skill | Description |
-|-------|-------------|
-| [atomic-habits](./skills/atomic-habits/) | Design, diagnose, or repair a habit with the Atomic Habits framework. Finds the broken stage of the habit loop before prescribing, and answers with environment changes rather than willpower. |
-| [cold-email](./skills/cold-email/) | Generate cold emails, DMs, and follow-up sequences with a proven 40%+ reply rate framework. Handles B2B outreach, investor emails, job pitches, scholarship asks, and networking. |
-| [teach-me](./skills/teach-me/) | Teach a subject one to one across sessions. Probes what you already hold, maps the subject as a dependency graph, then teaches one node at a time and makes you prove it stuck. |
+| Skill | What it does | What you get |
+|-------|--------------|--------------|
+| [**teach-me**](./skills/teach-me/) | Teaches a subject one to one across sessions. Probes what you already hold, maps the subject as a dependency graph, then teaches one node at a time and makes you prove it stuck. | A course folder: `COURSE.md`, `MAP.md` and one lesson file per class |
+| [**atomic-habits**](./skills/atomic-habits/) | Designs, diagnoses or repairs a habit with the Atomic Habits framework. Finds the broken stage of the habit loop before it prescribes anything. | `habit-plan-<name>.md`, a plan you bring back to review |
+| [**cold-email**](./skills/cold-email/) | Writes cold emails, DMs and follow-up sequences in a five-line structure, framed around the recipient. | A message ready to send, plus a follow-up cadence |
 
-## Installation
+Each skill folder has a README with example prompts and design notes.
 
-### Claude Code (recommended)
+## How a skill loads
+
+Claude reads a skill in stages, so a skill costs almost nothing until it is needed.
+
+```mermaid
+flowchart LR
+    A["Frontmatter<br/>name + description"] -- "request matches" --> B["SKILL.md<br/>the procedure"]
+    B -- "only the branch you need" --> C["references/<br/>techniques, examples, templates"]
+```
+
+Every skill here keeps the procedure in `SKILL.md` and moves anything that only one branch needs into `references/`.
+
+## Install
+
+### Claude Code
 
 This repository is a Claude Code marketplace.
-Installing the plugin brings in every skill at once, and `/plugin update` keeps them current.
+The plugin installs every skill, and `/plugin update` keeps them current.
 
 ```bash
 claude plugin marketplace add LaiqianDS/laiqiands-skills
 claude plugin install laiqiands-skills@laiqiands
 ```
 
-To install a single skill instead, symlink it into `~/.claude/skills/`:
+To install one skill only, symlink it into `~/.claude/skills/`:
 
 ```bash
 git clone https://github.com/LaiqianDS/laiqiands-skills.git
@@ -34,60 +50,20 @@ ln -s "$PWD/laiqiands-skills/skills/cold-email" ~/.claude/skills/cold-email
 
 ### Claude.ai
 
-1. Download an individual skill folder from `skills/` as a ZIP
-2. Make sure the ZIP contains the skill folder at root (e.g., `cold-email/SKILL.md`)
-3. Go to **Customize > Skills** in [Claude.ai](https://claude.ai/customize/skills)
-4. Upload the ZIP (or rename to `.skill`)
-5. Enable the skill
+1. Zip the skill folder, not the files inside it: `cd skills && zip -r cold-email.zip cold-email`.
+2. Upload the zip in **[Customize > Skills](https://claude.ai/customize/skills)** and enable it.
+3. For `teach-me` and `atomic-habits`, enable code execution in **Settings > Capabilities**. It lets Claude read the reference files.
 
-### API
+### Claude API
 
-Skills are available via the `/v1/skills` endpoint.
-See [Skills API docs](https://docs.claude.com) for integration details.
-
-## Repository Structure
-
-```
-laiqiands-skills/
-├── .claude-plugin/
-│   ├── marketplace.json   # Marketplace manifest
-│   └── plugin.json        # Plugin manifest. Skills are auto-discovered from skills/
-├── skills/                # One directory per skill. Everything here ships.
-│   ├── atomic-habits/
-│   ├── cold-email/
-│   └── teach-me/
-└── _template/             # Starting point for a new skill. Not installed.
-```
-
-Each skill follows the [Agent Skills standard](https://agentskills.io):
-
-```
-skill-name/
-├── SKILL.md          # Required. YAML frontmatter + instructions.
-├── README.md         # Required here. Human-facing usage notes.
-├── scripts/          # Optional. Executable code for deterministic tasks.
-├── references/       # Optional. Supplemental docs loaded as needed.
-└── assets/           # Optional. Templates, fonts, icons.
-```
-
-## Validation
-
-Every push and pull request runs `claude plugin validate --strict` plus a check that each skill's `name` matches its directory.
-Run the same checks locally before opening a PR:
-
-```bash
-claude plugin validate . --strict
-claude plugin validate skills --strict
-python3 scripts/check_skill_names.py
-```
+Upload a skill folder and attach it to a request.
+See the [Skills guide](https://platform.claude.com/docs/en/build-with-claude/skills-guide).
 
 ## Contributing
 
-If you find a bug or want to suggest an improvement to a skill, open an issue.
-PRs welcome for fixes.
-If you want to add a new skill, open an issue first to discuss scope.
-Please review our [Contribution Guidelines](CONTRIBUTING.md) to get started with creating a new skill using the provided `_template/`.
+Open an issue for a bug or an improvement.
+For a new skill, open an issue first to agree the scope, then follow [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT
+[MIT](LICENSE)

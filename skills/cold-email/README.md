@@ -1,6 +1,6 @@
 # Cold Email
 
-Generate cold emails, DMs, and follow-up sequences that actually get replies.
+Generate cold emails, DMs, and follow-up sequences framed around the recipient.
 
 ## What it does
 
@@ -31,7 +31,22 @@ When you ask Claude to write a cold email, DM, or outreach message, this skill k
 
 ## Install
 
-Download this folder as a ZIP and upload it in **Claude.ai > Customize > Skills**.
+**Claude.ai**: zip the folder, not the files inside it, and upload the zip in **Customize > Skills**.
+
+```bash
+cd skills && zip -r cold-email.zip cold-email
+```
+
+**Claude Code**:
+
+```bash
+# The whole collection
+claude plugin marketplace add LaiqianDS/laiqiands-skills
+claude plugin install laiqiands-skills@laiqiands
+
+# Or this skill alone, from a clone
+ln -s "$PWD/laiqiands-skills/skills/cold-email" ~/.claude/skills/cold-email
+```
 
 ## Credits
 
