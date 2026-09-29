@@ -9,7 +9,7 @@
     {
       "name": "laiqiands-skills",
       "source": "./",
-      "description": "A wide range of agent skills for daily use.",
+      "description": "Claude skills for tutoring, habit design and cold outreach.",
       "category": "productivity",
       "keywords": [
         "skills",

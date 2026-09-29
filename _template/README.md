@@ -22,7 +22,22 @@ Explain the core value proposition of the skill. When should a user invoke this?
 
 ## Install
 
-Download this folder as a ZIP and upload it in **Claude.ai > Customize > Skills**.
+**Claude.ai**: zip the folder, not the files inside it, and upload the zip in **Customize > Skills**.
+
+```bash
+cd skills && zip -r skill-name.zip skill-name
+```
+
+**Claude Code**:
+
+```bash
+# The whole collection
+claude plugin marketplace add LaiqianDS/laiqiands-skills
+claude plugin install laiqiands-skills@laiqiands
+
+# Or this skill alone, from a clone
+ln -s "$PWD/laiqiands-skills/skills/skill-name" ~/.claude/skills/skill-name
+```
 
 ## Credits
 

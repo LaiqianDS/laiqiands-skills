@@ -1,12 +1,10 @@
-# Contributing to Claude Skills
+# Contributing
 
-Thank you for your interest in contributing to the Claude Skills repository!
-We welcome new skills, improvements to existing skills, and bug fixes that enhance the Claude ecosystem.
+Bug reports, fixes to existing skills and new skills are all welcome.
 
-## Ways to Contribute
-1. **Reporting Issues:** Found a bug in a skill? The output is unpredictable? Please open an issue.
-2. **Improving Documentation:** Fix typos, add examples, or clarify skill instructions.
-3. **Submitting New Skills:** Have a great workflow you use with Claude? Package it as a skill and share it!
+- **A skill gives a bad result:** open an issue with the prompt you used and the output you got.
+- **Docs:** fix typos, add examples, or clarify instructions in a pull request.
+- **A new skill:** open an issue first, see [Proposing a new skill](#proposing-a-new-skill).
 
 ## Anatomy of a Skill
 Every skill lives in its own directory under `skills/` and adheres to the Agent Skills standard:
@@ -31,7 +29,7 @@ The `_template/` folder sits outside `skills/` on purpose, which is what keeps i
 1. **Open an Issue:** Before spending time building out a complex skill or porting existing knowledge bases, open an Issue or Discussion to see if it aligns with the goals of this repo and isn't a duplicate.
 2. **Copy the Template:** Copy `_template/` into `skills/` and rename it to your skill idea.
 3. **Write the SKILL.md:** Include the required YAML frontmatter (with `name` and `description`). Write clear, structured instructions mapping out the behavioral adjustments or knowledge. Keep the instructions directed at the AI agent (Claude).
-4. **Write the README.md:** Write instructions directed at the human user explaining value propositon, trigger examples, and how it works under the hood.
+4. **Write the README.md:** Write instructions directed at the human user explaining the value it gives, trigger examples, and how it works under the hood.
 
 You do not need to register the skill anywhere.
 The plugin discovers every directory in `skills/` automatically, so `plugin.json` never has to change.
@@ -66,8 +64,7 @@ The third needs only Python 3, with no packages to install.
 1. Fork the repository and create your feature branch from `main`.
 2. Run the validation checks above and fix anything they report.
 3. Submit a Pull Request. Ensure the description clearly outlines the changes made and the problem the skill addresses.
-4. Wait for a review from the maintainers.
+4. Wait for a review.
 
 ## Code of Conduct
-Please be respectful and patient when interacting in Issues and Pull Requests.
-All contributors are expected to uphold a welcoming and inclusive environment.
+Be respectful in issues and pull requests.
