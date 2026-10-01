@@ -12,6 +12,7 @@ Each skill teaches Claude one repeatable workflow.
 | Skill | What it does | What you get |
 |-------|--------------|--------------|
 | [**teach-me**](./skills/teach-me/) | Teaches a subject one to one across sessions. Probes what you already hold, maps the subject as a dependency graph, then teaches one node at a time and makes you prove it stuck. | A course folder: `COURSE.md`, `MAP.md` and one lesson file per class |
+| [**design-with-me**](./skills/design-with-me/) | Guides one design step by step across Claude Code and Claude Design: brief, reference design system, exploration, build, polish and record. | The interface in your stack, and a `DESIGN.md` read from what was built |
 | [**atomic-habits**](./skills/atomic-habits/) | Designs, diagnoses or repairs a habit with the Atomic Habits framework. Finds the broken stage of the habit loop before it prescribes anything. | `habit-plan-<name>.md`, a plan you bring back to review |
 | [**cold-email**](./skills/cold-email/) | Writes cold emails, DMs and follow-up sequences in a five-line structure, framed around the recipient. | A message ready to send, plus a follow-up cadence |
 
