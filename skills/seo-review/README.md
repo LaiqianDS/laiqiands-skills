@@ -18,9 +18,9 @@ Indexing checks come first, because a page Google cannot index gains nothing fro
 
 ## What you get
 
-```
-SEO-REVIEW.md    each check with its status, evidence and fix
-```
+A report in the chat: each check with its status, evidence and fix.
+The skill writes no file.
+Ask for one if you want to keep the report.
 
 After the report, Claude fixes the failures you choose, one at a time, and checks each fix again.
 

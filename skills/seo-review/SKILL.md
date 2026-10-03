@@ -6,7 +6,7 @@ argument-hint: "A URL, a project path, or both"
 
 # SEO Review
 
-Review a site against the 23 checks below, write the result in `SEO-REVIEW.md`, then fix what the user accepts.
+Review a site against the 23 checks below, show the result in the chat, then fix what the user accepts.
 Review first, fix second.
 Never change the site during the review.
 
@@ -75,7 +75,8 @@ Read the project before you ask. Do not ask what the code already answers.
 
 ## The report
 
-Write `SEO-REVIEW.md` in the project root, or show it in the chat when there is no project.
+Show the report in the chat, in this format.
+Do not write it to a file unless the user asks for one.
 
 ```markdown
 # SEO review: <site>
@@ -103,5 +104,5 @@ The Fix column names the file to change or the action for the user.
 
 After the report, ask which failures to fix.
 Fix one check at a time, in report order.
-After each fix, run the same check again and update its row in `SEO-REVIEW.md`.
+After each fix, run the same check again and show its row with the new status and evidence.
 If a fix needs a decision the code cannot answer, such as which URL is canonical or what an author did, ask before you change anything.
