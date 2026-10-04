@@ -19,10 +19,11 @@ Each phase leaves a file, and an explanation that lives only in the conversation
 | 2. Map | `MAP.md` | Every session |
 | 3. Teach | `lessons/000N-<slug>.md` | Append only |
 | 3. Teach | `lessons/000N-<slug>.html` | Append only, and only when the node earns a page |
+| All | `course.html` | Built by script, never by hand |
 
 Work in the current directory when it holds a `COURSE.md`, otherwise in a new `<subject-slug>/`.
 
-File names, directory names, headings and Mermaid keywords are always English, exactly as written here, so every course has the same shape.
+File names, directory names, headings, state tags and Mermaid keywords are always English, exactly as written here, so every course has the same shape.
 Everything the learner reads is in their language: explanations, diagram text, evidence, questions, verdicts and the words on a page, with `<html lang>` to match.
 Node labels and terms of art use the word the learner will meet in the field, which is usually English.
 
@@ -52,7 +53,7 @@ Draw the graph in `MAP.md`.
 Nodes are the concepts the goal in `COURSE.md` needs, **twenty five at most**. More is a second course.
 An edge means the parent must be held before the child makes sense, so order by dependency, never by a book's chapters.
 Mark every node the triage reached and leave the rest bare.
-Show the map to the learner and let them correct it.
+Build the book, under **The book**, show the learner the map in it, and let them correct it.
 
 Done when every probed node carries a state and the learner has seen the map.
 
@@ -64,7 +65,7 @@ Turn the difficulty **down** while you teach and **up** while you test.
 1. Teach the node as a class, under **Lessons**, in the conversation and in `lessons/000N-<slug>.md` with the same depth.
 2. Build a page only when the node earns one, under **Pages**.
 3. Test it, under **Proving it stuck**, and write the question, the answer and the result into the lesson.
-4. Update `MAP.md`.
+4. Update `MAP.md` and build the book.
 
 Done when the node's state in `MAP.md` is backed by something the learner produced, and the lesson file teaches the node to a reader who never saw the conversation.
 
@@ -94,6 +95,13 @@ If you cannot say in one line what the page shows that the lesson does not, skip
 - **The lesson stands alone.** It teaches the node when the page is never opened, and it links the page under `## Visual` with a relative path.
 - **One idea, one self-contained file.** Inline CSS and JavaScript, and no CDN, web fonts, build or network.
 - **Start from `references/lesson-template.html`**, so the pages look like one course. Then open the page for the learner with `open`, `xdg-open` or `start`.
+
+## The book
+
+`course.html` is the whole course as one page: the map, a table of contents and every lesson.
+Never read it or write it.
+Build it with `python3 scripts/build_book.py <workspace> <lang>`, where the script is in this skill's directory and `<lang>` is the learner's language code.
+Open it for the learner the first time, and tell them to reload it after that.
 
 ## Proving it stuck
 
@@ -127,15 +135,9 @@ Half a screen at most. Past that it is a plan, not a compass.
 ````markdown
 ## Map
 
-```mermaid
-graph TD
-  A[First concept] --> B[Second concept]
-  B --> C[Third concept]
-  classDef solid fill:#2e7d32,color:#fff
-  classDef weak fill:#f9a825,color:#000
-  class A solid
-  class B weak
-```
+- First concept [solid]
+- Second concept [weak] < First concept
+- Third concept < Second concept, First concept
 
 ## Evidence
 - **First concept**: what the learner produced, in one line
@@ -145,7 +147,9 @@ graph TD
 ````
 
 - **State lives only in the graph.** An evidence line records what the learner produced, never whether the node is solid.
-- **No class means not seen.** Only `solid` and `weak` are declared.
+- **One node per line**, parents after ` < `, separated by `, `.
+- **No tag means not seen.** Only `[solid]` and `[weak]` exist.
+- **A lesson's `# <node>` title is the node's label, exactly.** The book links the two by it.
 - **The frontier is not stored.** It is the weak node, or the first bare node whose parents are all solid.
 
 ### `lessons/000N-<slug>.md`
@@ -195,7 +199,8 @@ flowchart LR
 ## Returning to a course
 
 Read `COURSE.md` and `MAP.md` first, and never re-teach a solid node.
+If `MAP.md` still holds a Mermaid graph, rewrite it as the node list first.
 
 1. Probe one node that went solid two or more sessions ago. If it fails, it goes back to weak and becomes today's lesson.
 2. Otherwise run **3. Teach** on the frontier.
-3. Update `MAP.md` at the end of the session.
+3. Update `MAP.md` and build the book at the end of the session.
