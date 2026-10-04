@@ -24,18 +24,12 @@ Copy the shape and the depth, never the content.
 ````markdown
 ## Map
 
-```mermaid
-graph TD
-  A[Event loop] --> B[Promises]
-  A --> C[Node.js loop phases]
-  B --> D[async/await]
-  D --> E[Errors in async functions]
-  D --> F[Parallel vs sequential awaits]
-  classDef solid fill:#2e7d32,color:#fff
-  classDef weak fill:#f9a825,color:#000
-  class B solid
-  class A,D weak
-```
+- Event loop [weak]
+- Promises [solid] < Event loop
+- Node.js loop phases < Event loop
+- async/await [weak] < Promises
+- Errors in async functions < async/await
+- Parallel vs sequential awaits < async/await
 
 ## Evidence
 - **Event loop**: could not say why a `.then()` runs before a `setTimeout(0)` queued earlier. Guessed "timers are faster".
@@ -234,7 +228,8 @@ Why it reads this way:
 
 ## After the session
 
-In the graph, `class A,D weak` becomes `class D weak`, and `class B solid` becomes `class A,B solid`.
+In the map, `Event loop [weak]` becomes `Event loop [solid]`.
 The `Event loop` evidence line is replaced by what the learner produced today.
 `COURSE.md` does not change.
-The next session teaches `async/await` before `Node.js loop phases`, although both are unblocked, because it carries a recorded wrong belief that would spread to `E` and `F`.
+The next session teaches `async/await` before `Node.js loop phases`, although both are unblocked, because it carries a recorded wrong belief that would spread to its two children.
+The book is built again, so `course.html` shows the new state and the lesson.

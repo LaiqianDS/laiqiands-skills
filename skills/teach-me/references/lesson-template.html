@@ -11,21 +11,19 @@
 <title>{{node}}</title>
 <style>
   :root {
-    --bg: #fbfbf9;
-    --fg: #1b1b1a;
-    --muted: #63635e;
-    --line: #ddddd6;
-    --card: #ffffff;
-    --accent: #2e7d32;
+    --bg: #ffffff;
+    --fg: #141414;
+    --muted: #707070;
+    --line: #e0e0e0;
+    --card: #f3f3f3;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #16171a;
-      --fg: #e8e8e4;
-      --muted: #9a9a94;
-      --line: #2e3035;
-      --card: #1e2024;
-      --accent: #7fc784;
+      --bg: #141414;
+      --fg: #ffffff;
+      --muted: #adadad;
+      --line: #3d3d3d;
+      --card: #262626;
     }
   }
   * { box-sizing: border-box; }
@@ -34,24 +32,22 @@
     padding: 2.5rem 1.25rem 4rem;
     background: var(--bg);
     color: var(--fg);
-    font: 1rem/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 456 1rem/1.38 Saans, Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
   }
   main { max-width: 46rem; margin: 0 auto; }
   .eyebrow {
     color: var(--muted);
-    font-size: .8rem;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    font-size: .75rem;
+    font-weight: 600;
     margin: 0 0 .4rem;
   }
-  h1 { font-size: 1.75rem; line-height: 1.2; margin: 0 0 .5rem; }
+  h1 { font-size: 2rem; font-weight: 652; line-height: 1.13; margin: 0 0 .5rem; }
   .shows { color: var(--muted); margin: 0 0 2rem; }
 
   /* The stage. Whatever the page exists to show goes in here. */
   .stage {
     background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: .5rem;
+    border-radius: 1.5rem;
     padding: 1.5rem;
     overflow-x: auto;
   }
@@ -61,14 +57,16 @@
   .controls { display: flex; align-items: center; gap: .75rem; margin-top: 1rem; }
   button {
     font: inherit;
+    font-weight: 600;
     color: var(--fg);
-    background: var(--card);
+    background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: .375rem;
-    padding: .4rem .9rem;
+    border-radius: 9999px;
+    padding: .5rem 1rem;
     cursor: pointer;
   }
-  button:hover:not(:disabled) { border-color: var(--accent); }
+  #next { color: var(--bg); background: var(--fg); border-color: var(--fg); }
+  button:hover:not(:disabled) { border-color: var(--fg); }
   button:disabled { opacity: .4; cursor: default; }
   .counter { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .9rem; }
 

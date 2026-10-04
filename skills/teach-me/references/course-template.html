@@ -1,0 +1,463 @@
+<!doctype html>
+<!--
+  The course book. scripts/build_book.py fills the data slot with the course
+  files and writes course.html. Never fill or edit this by hand.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --ink: light-dark(#141414, #ffffff);
+    --muted: light-dark(#707070, #adadad);
+    --faint: light-dark(#adadad, #707070);
+    --canvas: light-dark(#ffffff, #141414);
+    --soft: light-dark(#f3f3f3, #262626);
+    --field: light-dark(#f0f0f0, #2b2b2b);
+    --hairline: light-dark(#e0e0e0, #3d3d3d);
+    --accent: #0066ff;
+    --sans: Saans, Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  /* The theme button sets data-theme. With no choice, the system decides. */
+  [data-theme="light"] { color-scheme: light; }
+  [data-theme="dark"] { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    background: var(--canvas);
+    color: var(--ink);
+    font: 456 16px/1.38 var(--sans);
+  }
+  a { color: inherit; text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  /* Table of contents */
+  .toc {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px;
+  }
+  .toc a {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 16px;
+    border-radius: 16px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .toc a:hover, .toc a[aria-current] { background: var(--soft); }
+  .toc .num { color: var(--faint); font-variant-numeric: tabular-nums; }
+  .toc .name { flex: 1; }
+  .toc .sub { padding: 4px 16px 4px 44px; color: var(--muted); font: 456 14px/1.43 var(--sans); }
+  .toc .sub.on { color: var(--ink); font-weight: 600; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.solid { background: var(--ink); }
+  .dot.weak { border: 2px solid var(--ink); }
+
+  /* Floating bar */
+  .bar {
+    position: sticky;
+    top: 16px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 720px;
+    margin: 16px auto 0;
+    padding: 8px 8px 8px 24px;
+    border-radius: 9999px;
+    background: var(--soft);
+  }
+  .bar .brand { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; text-decoration: none; }
+  .bar .count { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--hairline);
+    border-radius: 9999px;
+    background: var(--canvas);
+    color: var(--ink);
+    font: 600 16px/1 var(--sans);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .pill.primary { border-color: var(--ink); background: var(--ink); color: var(--canvas); }
+  .pill:not([href]):not(button) { opacity: .35; cursor: default; }
+  #menu { display: none; }
+  .pill, .node, .toc a, .copy, .graph path { transition: background-color .15s, border-color .15s, color .15s, stroke .15s, opacity .15s; }
+
+  /* The page */
+  main { max-width: 720px; margin: 0 auto; padding: 48px 24px 120px; }
+  h1 { font: 652 clamp(36px, 6vw, 56px)/1 var(--sans); margin: 0 0 24px; }
+  h2 { font: 652 32px/1.13 var(--sans); margin: 48px 0 16px; scroll-margin-top: 96px; }
+  h3, h4 { font: 600 20px/1.3 var(--sans); margin: 32px 0 12px; }
+  h1 + p { font: 300 20px/1.38 var(--sans); }
+  p, ul, ol { margin: 0 0 16px; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 8px 0; }
+  strong { font-weight: 600; }
+  code { font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  :not(pre) > code { padding: 2px 8px; border-radius: 16px; background: var(--field); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  pre { margin: 0 0 16px; padding: 16px; border-radius: 16px; background: var(--soft); overflow-x: auto; }
+  .code { position: relative; }
+  .copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--canvas);
+    color: var(--muted);
+    font: 600 14px/1 var(--sans);
+    cursor: pointer;
+    opacity: 0;
+  }
+  .code:hover .copy, .copy:focus-visible { opacity: 1; }
+  .copy:hover { color: var(--ink); }
+  .eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; color: var(--faint); }
+  pre.mermaid[data-processed] { background: none; text-align: center; }
+  .scroll { overflow-x: auto; margin: 0 0 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.43; }
+  th { background: var(--soft); font: 600 12px/1.33 var(--sans); text-align: left; }
+  th, td { padding: 12px 16px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+
+  /* The map */
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 32px 0 12px; }
+  .graph {
+    position: relative;
+    display: grid;
+    gap: 48px;
+    padding: 32px 24px;
+    border: 1px solid var(--field);
+    border-radius: 24px;
+  }
+  .graph svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .graph path { fill: none; stroke: var(--hairline); stroke-width: 1.5; }
+  .graph path.on { stroke: var(--ink); }
+  .rank { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 16px; }
+  .node {
+    position: relative;
+    padding: 8px 16px;
+    border: 1px solid var(--hairline);
+    border-radius: 9999px;
+    background: var(--canvas);
+    color: var(--muted);
+    font: 600 14px/1.43 var(--sans);
+    text-decoration: none;
+  }
+  .node.weak { border-color: var(--soft); background: var(--soft); color: var(--ink); }
+  .node.solid { border-color: var(--ink); background: var(--ink); color: var(--canvas); }
+  .node.next::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  a.node:hover { border-color: var(--ink); }
+  .legend .node, .eyebrow .node { padding: 2px 12px; font-size: 12px; }
+  .legend b { margin-left: 6px; font-weight: 456; opacity: .6; }
+
+  footer {
+    padding: 48px 24px 80px;
+    border-radius: 24px 24px 0 0;
+    background: var(--ink);
+    color: var(--canvas);
+  }
+  footer div { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+  footer p { margin: 0 0 8px; color: var(--faint); }
+  footer a { font: 652 32px/1.13 var(--sans); text-decoration: none; }
+
+  @media (max-width: 840px) {
+    body { display: block; }
+    .toc { display: none; position: fixed; inset: 0; z-index: 3; padding-top: 80px; background: var(--canvas); }
+    .open .toc { display: block; }
+    #menu { display: inline-flex; position: relative; z-index: 4; }
+    .bar { margin: 16px 16px 0; padding-left: 8px; }
+    h2 { font-size: 24px; line-height: 1.25; }
+  }
+</style>
+</head>
+<body>
+<nav class="toc" id="toc" aria-label="Contents"></nav>
+<div>
+  <header class="bar">
+    <button class="pill" id="menu" type="button" aria-label="Contents" aria-expanded="false">&#9776;</button>
+    <a class="brand" id="brand" href="#map"></a>
+    <span class="count" id="count"></span>
+    <button class="pill" id="theme" type="button" aria-label="Theme">&#9680;</button>
+    <a class="pill" id="prev" aria-label="Previous">&larr;</a>
+    <a class="pill primary" id="next" aria-label="Next">&rarr;</a>
+  </header>
+  <main id="view"></main>
+  <footer><div id="foot"></div></footer>
+</div>
+
+<script type="application/json" id="data">{{data}}</script>
+<script>
+  const D = JSON.parse(document.getElementById("data").textContent);
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const h1 = (src, or) => (src.match(/^# (.+)/m) || [0, or])[1].trim();
+
+  // ponytail: a small Markdown subset, enough for the lesson skeleton. No nested
+  // lists, no block inside a list item, no ")" in a URL, no "|" in a table cell.
+  // Swap in a real parser if lessons outgrow it.
+  function inline(s, base) {
+    const code = [];
+    return esc(s)
+      .replace(/`([^`]+)`/g, (_, c) => "\u0000" + (code.push(c) - 1) + "\u0000")
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => {
+        const web = /^https?:/i.test(u);
+        if (!web && /^[a-z][\w+.-]*:/i.test(u)) return t; // no javascript: or other schemes
+        return `<a href="${web || u[0] === "#" ? u : base + u}" target="_blank" rel="noopener">${t}</a>`;
+      })
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(\S(?:.*?\S)?)\*/g, "<em>$1</em>")
+      .replace(/\u0000(\d+)\u0000/g, (_, n) => `<code>${code[n]}</code>`)
+      .replace(/\n/g, "<br>");
+  }
+
+  function md(src, base = "") {
+    const L = src.replace(/\r/g, "").split("\n");
+    const out = [];
+    let i = 0, m;
+    while (i < L.length) {
+      const l = L[i];
+      if ((m = l.match(/^(`{3,})\s*(\w*)/))) {
+        const buf = [];
+        for (i++; i < L.length && !L[i].startsWith(m[1]); i++) buf.push(L[i]);
+        i++;
+        const text = esc(buf.join("\n"));
+        out.push(m[2] === "mermaid" ? `<pre class="mermaid">${text}</pre>`
+          : `<div class="code"><button class="copy" type="button" aria-label="Copy">&#10697;</button><pre><code>${text}</code></pre></div>`);
+      } else if ((m = l.match(/^(#{1,4}) (.*)/))) {
+        out.push(`<h${m[1].length}>${inline(m[2], base)}</h${m[1].length}>`);
+        i++;
+      } else if (l.startsWith("|") && /^\|[\s:|-]+\|\s*$/.test(L[i + 1] || "")) {
+        const row = (r, tag) => "<tr>" + r.trim().slice(1, -1).split("|").map((c) => `<${tag}>${inline(c.trim(), base)}</${tag}>`).join("") + "</tr>";
+        let rows = "";
+        const head = row(l, "th");
+        for (i += 2; i < L.length && L[i].startsWith("|"); i++) rows += row(L[i], "td");
+        out.push(`<div class="scroll"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`);
+      } else if ((m = l.match(/^(-|\d+\.) /))) {
+        const tag = m[1] === "-" ? "ul" : "ol";
+        const item = tag === "ul" ? /^- (.*)/ : /^\d+\. (.*)/;
+        const items = [];
+        for (; i < L.length; i++) {
+          if ((m = L[i].match(item))) items.push(m[1]);
+          else if (/^\s+\S/.test(L[i])) items[items.length - 1] += " " + L[i].trim();
+          else if (L[i].trim() || !item.test(L[i + 1] || "")) break;
+        }
+        out.push(`<${tag}>${items.map((t) => `<li>${inline(t, base)}</li>`).join("")}</${tag}>`);
+      } else if (!l.trim()) {
+        i++;
+      } else {
+        // Lines join into one paragraph. A bold line, such as a "**Why:**" field
+        // or a check question, keeps its own line.
+        let p = l;
+        for (i++; i < L.length && L[i].trim() && !/^(#{1,4} |`{3}|- |\d+\. |\|)/.test(L[i]); i++) {
+          p += (L[i].startsWith("**") || p.endsWith("**") ? "\n" : " ") + L[i];
+        }
+        out.push(`<p>${inline(p, base)}</p>`);
+      }
+    }
+    return out.join("\n");
+  }
+
+  // MAP.md: "## Map" holds one node per line, "- Label [solid|weak] < Parent, Parent".
+  function parseMap(src) {
+    const nodes = [];
+    const rest = [];
+    const find = (label) => {
+      let k = nodes.findIndex((n) => n.label === label);
+      if (k < 0) k = nodes.push({ label, state: "", parents: [] }) - 1; // a parent nobody declared still shows
+      return k;
+    };
+    for (const part of src.split(/^(?=## )/m)) {
+      if (!/^## Map\b/.test(part)) { rest.push(part); continue; }
+      for (const line of part.split("\n")) {
+        const m = line.match(/^- (.+?)(?: \[(solid|weak)\])?(?: < (.+))?\s*$/);
+        if (!m) continue;
+        const n = nodes[find(m[1].trim())];
+        n.state = m[2] || "";
+        n.parents = m[3] ? m[3].split(", ").map((p) => find(p.trim())) : [];
+      }
+    }
+    const rank = (k, seen = []) => seen.includes(k) ? 0 : (nodes[k].rank ??= Math.max(-1, ...nodes[k].parents.map((p) => rank(p, [...seen, k]))) + 1);
+    nodes.forEach((_, k) => rank(k));
+    // The frontier is derived, never stored: a weak node, or else a bare one, whose parents are all solid.
+    const open = (state) => nodes.find((n) => n.state === state && n.parents.every((p) => nodes[p].state === "solid"));
+    const next = open("weak") || open("");
+    if (next) next.next = true;
+    return { nodes, rest: rest.join("") };
+  }
+
+  const title = h1(D.course, "Course");
+  const lessons = D.lessons.map((l) => ({ ...l, title: h1(l.md, l.id) }));
+  const { nodes, rest } = parseMap(D.map);
+  const order = ["map", ...lessons.map((l) => l.id)];
+  const stateOf = (label) => (nodes.find((n) => n.label === label) || {}).state || "";
+
+  // The evidence line of a node, "- **Label**: text", is its tooltip on the map.
+  const evidence = {};
+  for (const m of rest.matchAll(/^- \*\*(.+?)\*\*: (.+)/gm)) evidence[m[1]] = m[2].replace(/[`*]/g, "");
+  const count = (state) => nodes.filter((n) => n.state === state).length;
+  const pill = (n) => {
+    const lesson = lessons.findLast((l) => l.title === n.label);
+    return lesson ? `<a class="node ${n.state}" href="#${lesson.id}">${esc(n.label)}</a>` : `<span class="node ${n.state}">${esc(n.label)}</span>`;
+  };
+
+  // Above a lesson title: the state of its node, and the nodes it builds on.
+  function eyebrow(lesson) {
+    const n = nodes.find((x) => x.label === lesson.title);
+    if (!n) return "";
+    return `<p class="eyebrow"><span class="node ${n.state}">${n.state || "not seen"}</span>`
+      + (n.parents.length ? "&larr;" + n.parents.map((p) => pill(nodes[p])).join("") : "") + "</p>";
+  }
+
+  function mapView() {
+    const ranks = [];
+    nodes.forEach((n, k) => {
+      const lesson = lessons.findLast((l) => l.title === n.label);
+      const cls = `node ${n.state}${n.next ? " next" : ""}`;
+      const tip = evidence[n.label] ? ` title="${esc(evidence[n.label])}"` : "";
+      (ranks[n.rank] ||= []).push(lesson
+        ? `<a class="${cls}"${tip} data-k="${k}" href="#${lesson.id}">${esc(n.label)}</a>`
+        : `<span class="${cls}"${tip} data-k="${k}">${esc(n.label)}</span>`);
+    });
+    return md(D.course)
+      + `<div class="legend"><span class="node solid">solid<b>${count("solid")}</b></span><span class="node weak">weak<b>${count("weak")}</b></span><span class="node">not seen<b>${count("")}</b></span><span class="node next">next</span></div>`
+      + `<div class="graph" id="graph"><svg></svg>${ranks.map((r) => `<div class="rank">${r.join("")}</div>`).join("")}</div>`
+      + md(rest);
+  }
+
+  // ponytail: an edge between ranks that are not adjacent runs behind the nodes in between.
+  function drawEdges() {
+    const g = $("graph");
+    if (!g) return;
+    const box = g.getBoundingClientRect();
+    const at = (k) => {
+      const r = g.querySelector(`[data-k="${k}"]`).getBoundingClientRect();
+      return { x: r.left + r.width / 2 - box.left, top: r.top - box.top, bottom: r.bottom - box.top };
+    };
+    g.querySelector("svg").innerHTML = nodes.flatMap((n, k) => n.parents.map((p) => {
+      const a = at(p), b = at(k), mid = (a.bottom + b.top) / 2;
+      return `<path data-a="${p}" data-b="${k}" d="M${a.x},${a.bottom} C${a.x},${mid} ${b.x},${mid} ${b.x},${b.top}"/>`;
+    })).join("");
+    g.onmouseover = g.onfocusin = (e) => {
+      const k = e.target.dataset.k;
+      g.querySelectorAll("path").forEach((p) => p.classList.toggle("on", k !== undefined && (p.dataset.a === k || p.dataset.b === k)));
+    };
+  }
+
+  const root = document.documentElement;
+  const dark = () => (root.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+
+  let mermaidLoad;
+  function diagrams() {
+    if (!$("view").querySelector("pre.mermaid")) return;
+    mermaidLoad ??= new Promise((ok, fail) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js";
+      s.onload = ok;
+      s.onerror = fail;
+      document.head.append(s);
+    });
+    // Offline, or on a syntax error, the diagram stays as its source text.
+    mermaidLoad.then(() => {
+      mermaid.initialize({ startOnLoad: false, theme: dark() ? "dark" : "neutral" });
+      return mermaid.run({ nodes: $("view").querySelectorAll("pre.mermaid:not([data-processed])") });
+    }).catch(() => {});
+  }
+
+  let heads = [];
+  function link(el, k) {
+    if (order[k]) el.href = "#" + order[k];
+    else el.removeAttribute("href");
+  }
+
+  function route() {
+    const [id, sec] = decodeURIComponent(location.hash.slice(1)).split("/");
+    const at = Math.max(0, order.indexOf(id));
+    const lesson = lessons[at - 1];
+    const view = $("view");
+    view.innerHTML = lesson ? eyebrow(lesson) + md(lesson.md, "lessons/") : mapView();
+    heads = [...view.querySelectorAll("h2")];
+
+    $("toc").innerHTML = `<a href="#map"${at ? "" : " aria-current='page'"}><span class="name">${esc(title)}</span></a>`
+      + lessons.map((l, k) => `<a href="#${l.id}"${at === k + 1 ? " aria-current='page'" : ""}>`
+        + `<span class="num">${parseInt(l.id, 10) || k + 1}</span><span class="name">${esc(l.title)}</span><i class="dot ${stateOf(l.title)}"></i></a>`
+        + (at === k + 1 ? heads.map((h, j) => `<a class="sub" href="#${l.id}/${j}">${esc(h.textContent)}</a>`).join("") : "")).join("");
+
+    document.title = lesson ? `${lesson.title} - ${title}` : title;
+    $("brand").textContent = title;
+    $("count").textContent = lesson ? `${at} / ${lessons.length}` : "";
+    link($("prev"), at - 1);
+    link($("next"), at + 1);
+    const after = lessons[at]; // order is offset by the map, so this is the next lesson
+    $("foot").innerHTML = `<p>${esc(title)}</p>` + (after
+      ? `<a href="#${after.id}">${esc(after.title)} &rarr;</a>`
+      : `<a href="#map">&larr; ${esc(title)}</a>`);
+
+    document.body.classList.remove("open");
+    $("menu").setAttribute("aria-expanded", "false");
+    drawEdges();
+    diagrams();
+    if (heads[sec]) heads[sec].scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    else scrollTo(0, 0);
+    spy();
+  }
+
+  // The section on screen is marked in the contents.
+  function spy() {
+    const now = heads.findLastIndex((h) => h.getBoundingClientRect().top < 120);
+    document.querySelectorAll(".toc .sub").forEach((a, j) => a.classList.toggle("on", j === now));
+  }
+
+  root.lang = D.lang;
+  // The choice is a convenience. The page works when storage is blocked.
+  try { if (localStorage.theme) root.dataset.theme = localStorage.theme; } catch {}
+  $("theme").addEventListener("click", () => {
+    root.dataset.theme = dark() ? "light" : "dark";
+    try { localStorage.theme = root.dataset.theme; } catch {}
+    const y = scrollY;
+    route(); // diagrams are drawn again in the new theme
+    scrollTo(0, y);
+  });
+  $("menu").addEventListener("click", () => {
+    $("menu").setAttribute("aria-expanded", document.body.classList.toggle("open"));
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.altKey || e.metaKey || e.ctrlKey) return;
+    if (e.key === "ArrowLeft") $("prev").click();
+    if (e.key === "ArrowRight") $("next").click();
+  });
+  $("view").addEventListener("click", (e) => {
+    if (!e.target.matches(".copy")) return;
+    navigator.clipboard.writeText(e.target.nextElementSibling.textContent).then(() => {
+      e.target.innerHTML = "&check;";
+      setTimeout(() => { e.target.innerHTML = "&#10697;"; }, 1500);
+    }).catch(() => {}); // no clipboard access: the text can still be selected
+  });
+  addEventListener("scroll", spy, { passive: true });
+  addEventListener("hashchange", route);
+  addEventListener("resize", drawEdges);
+  route();
+</script>
+</body>
+</html>
